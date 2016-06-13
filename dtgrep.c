@@ -7,16 +7,16 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 extern char *optarg;
 extern int optind, opterr, optopt;
+char const *program_name;
 
 off_t binary_search(FILE * file, time_t from, char *timestamp_format);
 void process_file(FILE * file, time_t from, time_t to,
 		  char *timestamp_format);
 time_t parse_date(char *string, char *format);
-void die(char *name, char *msg);
-
 time_t parse_date(char *string, char *format)
 {
     struct tm *parsed_dt = &(struct tm) { 0 };
@@ -30,14 +30,9 @@ time_t parse_date(char *string, char *format)
     return (time_t) - 1;
 }
 
-void die(char *name, char *msg)
-{
-    fprintf(stderr, "%s: %s\n", name, msg);
-    exit(EXIT_FAILURE);
-}
-
 int main(int argc, char *argv[])
 {
+    program_name = argv[0];
     time_t from = 0;
     time_t to = time(NULL);
 
@@ -49,12 +44,16 @@ int main(int argc, char *argv[])
 	if (opt == 'f') {
 	    from = parse_date(optarg, "%FT%T");
 	    if (from == -1) {
-		die(argv[0], "Can't parse argument to --from");
+		fprintf(stderr, "%s: Can't parse argument to --from.\n",
+			program_name);
+		exit(EXIT_FAILURE);
 	    }
 	} else if (opt == 't') {
 	    to = parse_date(optarg, "%FT%T");
 	    if (to == -1) {
-		die(argv[0], "Can't parse argument to --to");
+		fprintf(stderr, "%s: Can't parse argument to --to.\n",
+			program_name);
+		exit(EXIT_FAILURE);
 	    }
 	} else if (opt == 'F') {
 	    timestamp_format = optarg;
@@ -62,7 +61,9 @@ int main(int argc, char *argv[])
     }
 
     if (from >= to) {
-	die(argv[0], "--from larger or equal to --to");
+	fprintf(stderr, "%s: --from larger or equal to --to.",
+		program_name);
+	exit(EXIT_FAILURE);
     }
 
     if (optind < argc) {
