@@ -97,13 +97,12 @@ void process_file(FILE * file, time_t from, time_t to,
     size_t max_size = 0;
 
     while ((read = getline(&line, &max_size, file)) != -1) {
-	time_t epoch = parse_date(line, timestamp_format);
+	time_t date = parse_date(line, timestamp_format);
 
-	if (epoch != -1 && epoch >= from && epoch < to) {
-	    printf("%s",line);
-	}
-	else if ( epoch >= to ) {
-		break;
+	if (date != -1 && date >= from && date < to) {
+	    printf("%s", line);
+	} else if (date >= to) {
+	    break;
 	}
     }
     free(line);
