@@ -138,7 +138,7 @@ off_t binary_search(FILE * file, time_t from, char *timestamp_format)
 
     while (max - min > 1) {
 	mid = (max + min) / 2;
-	fseeko(file, mid, SEEK_SET);
+	fseeko(file, mid * blksize, SEEK_SET);
 
 	// skip partial line if mid != 0
 	if (mid != 0) {
@@ -155,11 +155,10 @@ off_t binary_search(FILE * file, time_t from, char *timestamp_format)
 		}
 	    }
 	}
-	free(line);
     }
 
     min *= blksize;
-    fseeko(file, mid, SEEK_SET);
+    fseeko(file, min, SEEK_SET);
     if (min != 0) {
 	skip_partial_line(file);
     }
