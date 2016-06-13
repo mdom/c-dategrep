@@ -171,8 +171,10 @@ off_t binary_search(FILE * file, time_t from, char *timestamp_format)
 	}
 	time_t timestamp = parse_date(line, timestamp_format);
 	if (timestamp != -1 && timestamp >= from) {
+	    free(line);
 	    return min;
 	}
     }
+    free(line);
     return -1;
 }
