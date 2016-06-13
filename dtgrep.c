@@ -67,10 +67,16 @@ int main(int argc, char *argv[])
     }
 
     if (optind < argc) {
-	FILE *file = fopen(argv[optind], "r");
-	off_t offset = binary_search(file, from, timestamp_format);
-	fseeko(file, offset, SEEK_SET);
-	process_file(file, from, to, timestamp_format);
+	for (; optind < argc; optind++) {
+
+	    FILE *file = fopen(argv[optind], "r");
+
+	    off_t offset = binary_search(file, from, timestamp_format);
+
+	    fseeko(file, offset, SEEK_SET);
+	    process_file(file, from, to, timestamp_format);
+	    fclose(file);
+	}
     } else {
 	process_file(stdin, from, to, timestamp_format);
     }
