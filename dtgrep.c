@@ -100,19 +100,13 @@ void process_file(FILE * file, time_t from, time_t to,
 	time_t epoch = parse_date(line, timestamp_format);
 
 	if (epoch != -1 && epoch >= from && epoch < to) {
-	    size_t max_size = 25;
-	    char *formatted_time = malloc(max_size);
-
-	    struct tm *dt = localtime(&epoch);
-
-	    strftime(formatted_time, max_size, "%FT%T%z", dt);
-	    printf("%s %s", formatted_time, line);
-	    free(formatted_time);
+	    printf("%s",line);
 	}
 	else if ( epoch >= to ) {
 		break;
 	}
-    } free(line);
+    }
+    free(line);
 }
 
 
