@@ -109,6 +109,9 @@ void process_file(FILE * file, time_t from, time_t to,
 	    printf("%s %s", formatted_time, line);
 	    free(formatted_time);
 	}
+	else if ( epoch >= to ) {
+		break;
+	}
     } free(line);
 }
 
