@@ -30,6 +30,19 @@ time_t parse_date(char *string, char *format)
     return (time_t) - 1;
 }
 
+char *parse_format(char *format)
+{
+    char *new_format = format;
+    if (!strcmp(format, "rsyslog")) {
+	new_format = "%b %e %H:%M:%S";
+    } else if (!strcmp(format, "apache")) {
+	new_format = "%d/%b/%Y:%H:%M:%S %z";
+    } else if (!strcmp(format, "rfc3339")) {
+	new_format = "%FT%T"; //missing %z as strptime does not support it
+    }
+    return new_format;
+}
+
 int main(int argc, char *argv[])
 {
     program_name = argv[0];
@@ -56,7 +69,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	    }
 	} else if (opt == 'F') {
-	    timestamp_format = optarg;
+	    timestamp_format = parse_format(optarg);
 	}
     }
 
