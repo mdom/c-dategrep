@@ -71,6 +71,12 @@ int main(int argc, char *argv[])
 
 	    FILE *file = fopen(argv[optind], "r");
 
+	    if (!file) {
+		fprintf(stderr, "%s: Can't open file %s: %s.\n",
+			program_name, argv[optind], strerror(errno));
+		exit(EXIT_FAILURE);
+	    }
+
 	    off_t offset = binary_search(file, from, timestamp_format);
 
 	    fseeko(file, offset, SEEK_SET);
