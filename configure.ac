@@ -7,7 +7,8 @@ AC_CONFIG_SRCDIR([dategrep.c])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
-AC_PROG_CC_STDC
+AC_PROG_CC
+AC_PROG_CC_C99
 
 # Checks for libraries.
 
