@@ -85,7 +85,15 @@ int main(int argc, char *argv[])
 	    }
 	} else if (opt == 'F') {
 	    options.format = parse_format(optarg);
+	} else if (opt == ':' || opt == '?') {
+	    errflg = true;
 	}
+    }
+
+    if (errflg) {
+	fprintf(stderr, "Usage: %s [-f DATE] [-t DATE] [-F FORMAT]\n",
+		program_name);
+	exit(EXIT_FAILURE);
     }
 
     if (options.from >= options.to) {
