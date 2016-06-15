@@ -8,15 +8,24 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <stdbool.h>
 
 extern char *optarg;
 extern int optind, opterr, optopt;
 char const *program_name;
 
-off_t binary_search(FILE * file, time_t from, char *timestamp_format);
-void process_file(FILE * file, time_t from, time_t to,
-		  char *timestamp_format);
+struct options {
+    time_t from;
+    time_t to;
+    bool multiline;
+    bool skip;
+    char *format;
+};
+
+off_t binary_search(FILE * file, struct options options);
+void process_file(FILE * file, struct options options);
 time_t parse_date(char *string, char *format);
+
 time_t parse_date(char *string, char *format)
 {
     struct tm *parsed_dt = &(struct tm) { 0 };
@@ -46,34 +55,40 @@ char *parse_format(char *format)
 int main(int argc, char *argv[])
 {
     program_name = argv[0];
-    time_t from = 0;
-    time_t to = time(NULL);
 
-    char *timestamp_format = "%b %e %H:%M:%S";
+    struct options options = {
+	.format = "%b %e %H:%M:%S",
+	.from = 0,
+	.to = time(NULL),
+	.skip = false,
+	.multiline = false,
+    };
+
+    bool errflg = false;
 
     int opt;
 
     while ((opt = getopt(argc, argv, "f:t:F:")) != -1) {
 	if (opt == 'f') {
-	    from = parse_date(optarg, "%FT%T");
-	    if (from == -1) {
+	    options.from = parse_date(optarg, "%FT%T");
+	    if (options.from == -1) {
 		fprintf(stderr, "%s: Can't parse argument to --from.\n",
 			program_name);
 		exit(EXIT_FAILURE);
 	    }
 	} else if (opt == 't') {
-	    to = parse_date(optarg, "%FT%T");
-	    if (to == -1) {
+	    options.to = parse_date(optarg, "%FT%T");
+	    if (options.to == -1) {
 		fprintf(stderr, "%s: Can't parse argument to --to.\n",
 			program_name);
 		exit(EXIT_FAILURE);
 	    }
 	} else if (opt == 'F') {
-	    timestamp_format = parse_format(optarg);
+	    options.format = parse_format(optarg);
 	}
     }
 
-    if (from >= to) {
+    if (options.from >= options.to) {
 	fprintf(stderr, "%s: --from larger or equal to --to.",
 		program_name);
 	exit(EXIT_FAILURE);
@@ -90,31 +105,30 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	    }
 
-	    off_t offset = binary_search(file, from, timestamp_format);
+	    off_t offset = binary_search(file, options);
 
 	    fseeko(file, offset, SEEK_SET);
-	    process_file(file, from, to, timestamp_format);
+	    process_file(file, options);
 	    fclose(file);
 	}
     } else {
-	process_file(stdin, from, to, timestamp_format);
+	process_file(stdin, options);
     }
     exit(0);
 }
 
-void process_file(FILE * file, time_t from, time_t to,
-		  char *timestamp_format)
+void process_file(FILE * file, struct options options)
 {
     char *line = NULL;
     ssize_t read;
     size_t max_size = 0;
 
     while ((read = getline(&line, &max_size, file)) != -1) {
-	time_t date = parse_date(line, timestamp_format);
+	time_t date = parse_date(line, options.format);
 
-	if (date != -1 && date >= from && date < to) {
+	if (date != -1 && date >= options.from && date < options.to) {
 	    printf("%s", line);
-	} else if (date >= to) {
+	} else if (date >= options.to) {
 	    break;
 	}
     }
@@ -131,7 +145,7 @@ void skip_partial_line(FILE * file)
     return;
 }
 
-off_t binary_search(FILE * file, time_t from, char *timestamp_format)
+off_t binary_search(FILE * file, struct options options)
 {
     int fd = fileno(file);
     struct stat *stats = &(struct stat) {
@@ -158,9 +172,8 @@ off_t binary_search(FILE * file, time_t from, char *timestamp_format)
 	}
 
 	if ((read = getline(&line, &max_size, file) != -1)) {
-	    time_t timestamp = parse_date(line, timestamp_format);
-	    if (timestamp != -1) {
-		if (timestamp < from) {
+	    time_t timestamp = parse_date(line, options.format);
+		if (timestamp < options.from) {
 		    min = mid;
 		} else {
 		    max = mid;
@@ -181,8 +194,8 @@ off_t binary_search(FILE * file, time_t from, char *timestamp_format)
 	if (read == -1) {
 	    break;
 	}
-	time_t timestamp = parse_date(line, timestamp_format);
-	if (timestamp != -1 && timestamp >= from) {
+	time_t timestamp = parse_date(line, options.format);
+	if (timestamp != -1 && timestamp >= options.from) {
 	    free(line);
 	    return min;
 	}
