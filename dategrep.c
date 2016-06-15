@@ -133,7 +133,12 @@ void process_file(FILE * file, struct options options)
     while ((read = getline(&line, &max_size, file)) != -1) {
 	time_t date = parse_date(line, options.format);
 
-	if (date != -1 && date >= options.from && date < options.to) {
+	if (date == -1) {
+	    fflush(stdout);
+	    fprintf(stderr, "%s: Unparsable line: %s", program_name, line);
+	    exit(EXIT_FAILURE);
+	}
+	if (date >= options.from && date < options.to) {
 	    printf("%s", line);
 	} else if (date >= options.to) {
 	    break;
@@ -180,6 +185,11 @@ off_t binary_search(FILE * file, struct options options)
 
 	if ((read = getline(&line, &max_size, file) != -1)) {
 	    time_t timestamp = parse_date(line, options.format);
+	    if (timestamp == -1) {
+		fprintf(stderr, "%s: Found line without date: <%s>\n",
+			program_name, line);
+		exit(EXIT_FAILURE);
+	    } else {
 		if (timestamp < options.from) {
 		    min = mid;
 		} else {
@@ -202,7 +212,12 @@ off_t binary_search(FILE * file, struct options options)
 	    break;
 	}
 	time_t timestamp = parse_date(line, options.format);
-	if (timestamp != -1 && timestamp >= options.from) {
+	if (timestamp == -1) {
+	    fprintf(stderr, "%s: Found line without date: <%s>\n",
+		    program_name, line);
+	    exit(EXIT_FAILURE);
+	}
+	if (timestamp >= options.from) {
 	    free(line);
 	    return min;
 	}
