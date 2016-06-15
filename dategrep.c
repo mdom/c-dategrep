@@ -122,7 +122,6 @@ int main(int argc, char *argv[])
     } else {
 	process_file(stdin, options);
     }
-    exit(0);
 }
 
 void process_file(FILE * file, struct options options)
