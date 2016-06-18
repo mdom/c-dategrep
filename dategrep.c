@@ -45,7 +45,8 @@ char *parse_format(char *format)
     if (!strcmp(format, "rsyslog")) {
 	new_format = "%b %e %H:%M:%S";
     } else if (!strcmp(format, "apache")) {
-	new_format = "%d/%b/%Y:%H:%M:%S %z";
+	// missing %z as strptime does not support it
+	new_format = "%d/%b/%Y:%H:%M:%S";
     } else if (!strcmp(format, "rfc3339")) {
 	// missing %z as strptime does not support it
 	new_format = "%Y-%m-%dT%H:%M:%S";
