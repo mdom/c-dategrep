@@ -47,7 +47,8 @@ char *parse_format(char *format)
     } else if (!strcmp(format, "apache")) {
 	new_format = "%d/%b/%Y:%H:%M:%S %z";
     } else if (!strcmp(format, "rfc3339")) {
-	new_format = "%FT%T"; //missing %z as strptime does not support it
+	// missing %z as strptime does not support it
+	new_format = "%Y-%m-%dT%H:%M:%S";
     }
     return new_format;
 }
