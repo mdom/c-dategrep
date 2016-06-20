@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
     }
 
     if (options.from >= options.to) {
-	fprintf(stderr, "%s: --from larger or equal to --to.",
+	fprintf(stderr, "%s: --from larger or equal to --to.\n",
 		program_name);
 	exit(EXIT_FAILURE);
     }
