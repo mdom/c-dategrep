@@ -189,6 +189,8 @@ off_t binary_search(FILE * file, struct options options)
     };
     fstat(fd, stats);
     blksize_t blksize = stats->st_blksize;
+    if (blksize == 0)
+	blksize = 8192;
 
     off_t max = stats->st_size / blksize;
     off_t min = 0;
