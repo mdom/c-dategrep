@@ -1,5 +1,5 @@
 bin_PROGRAMS = dategrep
-dategrep_SOURCES = dategrep.c
+dategrep_SOURCES = dategrep.c approxidate.c approxidate.h
 
 test:
 	cd t && prove *.t

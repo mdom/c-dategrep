@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <stdbool.h>
+#include "approxidate.h"
 
 extern char *optarg;
 extern int optind, opterr, optopt;
@@ -90,19 +91,22 @@ int main(int argc, char *argv[])
 
     while ((opt = getopt(argc, argv, "f:t:F:")) != -1) {
 	if (opt == 'f') {
-	    options.from = parse_date(optarg, "%FT%T");
-	    if (options.from == -1) {
+	    struct timeval t;
+	    if (approxidate(optarg, &t) == -1) {
 		fprintf(stderr, "%s: Can't parse argument to --from.\n",
 			program_name);
 		exit(EXIT_FAILURE);
 	    }
+	    options.from = t.tv_sec;
 	} else if (opt == 't') {
-	    options.to = parse_date(optarg, "%FT%T");
-	    if (options.to == -1) {
+	    struct timeval t;
+	    if (approxidate(optarg, &t) == -1) {
 		fprintf(stderr, "%s: Can't parse argument to --to.\n",
 			program_name);
 		exit(EXIT_FAILURE);
 	    }
+	    options.to = t.tv_sec;
+
 	} else if (opt == 'F') {
 	    options.format = parse_format(optarg);
 	} else if (opt == ':' || opt == '?') {
