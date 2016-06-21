@@ -33,11 +33,11 @@ extern char *optarg;
 extern int optind, opterr, optopt;
 char const *program_name;
 
-struct file_arg {
+typedef struct {
     FILE *file;
     time_t from;
     char *name;
-};
+} logfile;
 
 struct options {
     time_t from;
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     if (optind < argc) {
 
 	int no_files = argc - optind;
-	struct file_arg args[no_files];
+	logfile args[no_files];
 
 	for (int i = 0; optind < argc; optind++, i++) {
 
@@ -146,12 +146,12 @@ int main(int argc, char *argv[])
 			program_name, argv[optind], strerror(errno));
 		exit(EXIT_FAILURE);
 	    }
-	    args[i] = (struct file_arg) {
 	    .file = file,.name = argv[optind],};
+	    args[i] = (logfile) {
 	}
 
 	for (int i = 0; i < no_files; i++) {
-	    struct file_arg current = args[i];
+	    logfile current = args[i];
 	    FILE *file = current.file;
 
 	    off_t offset = binary_search(file, options);
