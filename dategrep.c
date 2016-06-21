@@ -146,8 +146,12 @@ int main(int argc, char *argv[])
 			program_name, argv[optind], strerror(errno));
 		exit(EXIT_FAILURE);
 	    }
-	    .file = file,.name = argv[optind],};
 	    args[i] = (logfile) {
+	    /* *INDENT-OFF* */
+		.file = file,
+		.name = argv[optind],
+	    /* *INDENT-ON* */
+	    };
 	}
 
 	for (int i = 0; i < no_files; i++) {
