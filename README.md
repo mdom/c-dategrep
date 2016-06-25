@@ -5,7 +5,7 @@ dategrep - print lines matching a date range
 # SYNOPSIS
 
     dategrep -f "12:00" -t "12:15" -F "%b %d %H:%M:%S" syslog
-    dategrep -t "12:15" -F "%b %d %H:%M:%S" syslog
+    dategrep -t "12:15" -F apache access.log
     cat syslog | dategrep -t "12:15"
 
 # DESCRIPTION
