@@ -1,7 +1,9 @@
 #!/bin/sh
 
 PATH=..:$PATH
-plan=0;
+
+plan=0
+rc_plan=0
 
 ok(){
 	printf "ok $plan $description\n";
@@ -15,6 +17,7 @@ check_expections(){
 	if [ "$plan" != 0 ];then
 		test_output stderr_plan stderr &&
 		test_output stdout_plan stdout &&
+		[ $rc -eq $rc_plan ] &&
 		ok ||
 		not_ok
 	fi
@@ -46,6 +49,7 @@ done_testing(){
 
 dg(){
 	dategrep "$@" input > stdout 2> stderr
+	rc=$?
 }
 
 input() { cat > input;  }
@@ -53,7 +57,12 @@ stdin() { cat > stdin;  }
 stdout(){ cat > stdout_plan; }
 stderr(){ cat > stderr_plan; }
 
-clean_up(){ rm -f input stdin stdout stderr expect stdout_plan stderr_plan; }
+rc() { rc_plan=$1; }
+
+clean_up(){
+	rm -f input stdin stdout stderr expect stdout_plan stderr_plan;
+	rc_plan=0
+}
 
 #################
 test "Empty input results in empty output"
@@ -115,6 +124,8 @@ foo
 2010-05-01T00:00:01 line 2
 2010-05-01T00:00:02 line 3
 EOF
+
+rc 1
 
 stderr <<EOF
 dategrep: Found line without date: foo
