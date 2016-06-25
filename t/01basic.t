@@ -12,17 +12,18 @@ not_ok(){
 }
 
 check_expections(){
-	test_output stderr_plan stderr &&
-	test_output stdout_plan stdout &&
-	ok ||
-	not_ok
+	if [ "$plan" != 0 ];then
+		test_output stderr_plan stderr &&
+		test_output stdout_plan stdout &&
+		ok ||
+		not_ok
+	fi
 }
 
 test(){
-	if [ "$plan" != 0 ];then
-		check_expections
-	fi
+	check_expections
 	clean_up
+	touch stdout_plan stderr_plan
 	plan=$(( plan + 1 ))
 	description=$1
 }
@@ -60,12 +61,6 @@ test "Empty input results in empty output"
 input <<EOF
 EOF
 
-stdout <<EOF
-EOF
-
-stderr <<EOF
-EOF
-
 dg -f 2010-05-01T00:00:00 -t 2010-05-01T00:00:01
 
 #################
@@ -83,9 +78,6 @@ stdout <<EOF
 2010-05-01T00:00:02 line 3
 EOF
 
-stderr <<EOF
-EOF
-
 dg -f "2010-05-01T00:00:00" -t "2010-05-01T00:00:03" -F "%FT%T"
 
 #################
@@ -95,12 +87,6 @@ input <<EOF
 2010-05-01T00:00:00 line 1
 2010-05-01T00:00:01 line 2
 2010-05-01T00:00:02 line 3
-EOF
-
-stdout <<EOF
-EOF
-
-stderr <<EOF
 EOF
 
 dg -f "2010-05-01T00:00:03" -F "%FT%T"
@@ -116,9 +102,6 @@ EOF
 
 stdout <<EOF
 2010-05-01T00:00:01 line 2
-EOF
-
-stderr <<EOF
 EOF
 
 dg -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
@@ -137,9 +120,6 @@ stderr <<EOF
 dategrep: Found line without date: foo
 EOF
 
-stdout <<EOF
-EOF
-
 dg -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
 
 #################
@@ -150,9 +130,6 @@ input <<EOF
 foo
 2010-05-01T00:00:01 line 2
 2010-05-01T00:00:02 line 3
-EOF
-
-stderr <<EOF
 EOF
 
 stdout <<EOF
