@@ -77,8 +77,8 @@ dategrep directly.
   Additionally, dategrep supports named formats:
 
   * rsyslog "%b %e %H:%M:%S"
-  * apache "%d/%b/%Y:%T %z"
-  * iso8601 "%O%Z"
+  * apache "%d/%b/%Y:%H:%M:%S"
+  * iso8601 "%Y-%m-%dT%H:%M:%S"
 
 * -h
 
