@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 
     int opt;
 
-    while ((opt = getopt(argc, argv, "f:t:F:")) != -1) {
+    while ((opt = getopt(argc, argv, "f:t:F:s")) != -1) {
 	if (opt == 'f') {
 	    struct timeval t;
 	    if (approxidate(optarg, &t) == -1) {
@@ -115,6 +115,8 @@ int main(int argc, char *argv[])
 
 	} else if (opt == 'F') {
 	    options.format = parse_format(optarg);
+	} else if (opt == 's') {
+	    options.skip = true;
 	} else if (opt == ':' || opt == '?') {
 	    errflg = true;
 	}
@@ -178,7 +180,7 @@ void process_file(FILE * file, struct options options)
     while ((read = getline(&line, &max_size, file)) != -1) {
 	time_t date = parse_date(line, options.format);
 
-	if (date == -1) {
+	if (date == -1 && !options.skip) {
 	    fflush(stdout);
 	    fprintf(stderr, "%s: Unparsable line: %s", program_name, line);
 	    exit(EXIT_FAILURE);
@@ -232,8 +234,8 @@ off_t binary_search(FILE * file, struct options options)
 
 	if ((read = getline(&line, &max_size, file) != -1)) {
 	    time_t timestamp = parse_date(line, options.format);
-	    if (timestamp == -1) {
-		fprintf(stderr, "%s: Found line without date: <%s>\n",
+	    if (timestamp == -1 && !options.skip) {
+		fprintf(stderr, "%s: Found line without date: %s",
 			program_name, line);
 		exit(EXIT_FAILURE);
 	    } else {
@@ -259,8 +261,8 @@ off_t binary_search(FILE * file, struct options options)
 	    break;
 	}
 	time_t timestamp = parse_date(line, options.format);
-	if (timestamp == -1) {
-	    fprintf(stderr, "%s: Found line without date: <%s>\n",
+	if (timestamp == -1 && !options.skip) {
+	    fprintf(stderr, "%s: Found line without date: %s",
 		    program_name, line);
 	    exit(EXIT_FAILURE);
 	}

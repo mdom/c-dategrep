@@ -123,6 +123,39 @@ EOF
 
 dg -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
 
+#################
+test "Skip dateless lines"
+
+input <<EOF
+2010-05-01T00:00:00 line 1
+foo
+2010-05-01T00:00:01 line 2
+2010-05-01T00:00:02 line 3
+EOF
+
+stderr <<EOF
+dategrep: Found line without date: foo
+EOF
+
+stdout <<EOF
+EOF
+
+dg -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
+
+#################
+test "Skip dateless lines"
+
+input <<EOF
+2010-05-01T00:00:00 line 1
+foo
+2010-05-01T00:00:01 line 2
+2010-05-01T00:00:02 line 3
+EOF
+
+stderr <<EOF
+EOF
+
+stdout <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
