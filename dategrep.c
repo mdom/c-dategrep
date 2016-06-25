@@ -51,6 +51,12 @@ off_t binary_search(FILE * file, struct options options);
 void process_file(FILE * file, struct options options);
 time_t parse_date(char *string, char *format);
 
+void print_usage(void)
+{
+    fprintf(stderr, "Usage: %s [-f DATE] [-t DATE] [-F FORMAT]\n",
+	    program_name);
+}
+
 time_t parse_date(char *string, char *format)
 {
     struct tm *parsed_dt = &(struct tm) { 0 };
@@ -91,11 +97,9 @@ int main(int argc, char *argv[])
 	.multiline = false,
     };
 
-    bool errflg = false;
-
     int opt;
 
-    while ((opt = getopt(argc, argv, "f:t:F:sm")) != -1) {
+    while ((opt = getopt(argc, argv, "f:t:F:smh")) != -1) {
 	if (opt == 'f') {
 	    struct timeval t;
 	    if (approxidate(optarg, &t) == -1) {
@@ -119,15 +123,13 @@ int main(int argc, char *argv[])
 	    options.skip = true;
 	} else if (opt == 'm') {
 	    options.multiline = true;
+	} else if (opt == 'h') {
+	    print_usage();
+	    exit(EXIT_SUCCESS);
 	} else if (opt == ':' || opt == '?') {
-	    errflg = true;
+	    print_usage();
+	    exit(EXIT_FAILURE);
 	}
-    }
-
-    if (errflg) {
-	fprintf(stderr, "Usage: %s [-f DATE] [-t DATE] [-F FORMAT]\n",
-		program_name);
-	exit(EXIT_FAILURE);
     }
 
     if (options.from >= options.to) {
