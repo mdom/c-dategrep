@@ -150,4 +150,22 @@ EOF
 dg -s -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
 
 #################
+test "Print multine logs"
+
+input <<EOF
+2010-05-01T00:00:00 line 1
+foo
+2010-05-01T00:00:01 line 2
+bar
+2010-05-01T00:00:02 line 3
+EOF
+
+stdout <<EOF
+2010-05-01T00:00:01 line 2
+bar
+EOF
+
+dg -m -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
+
+#################
 done_testing

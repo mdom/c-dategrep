@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 
     int opt;
 
-    while ((opt = getopt(argc, argv, "f:t:F:s")) != -1) {
+    while ((opt = getopt(argc, argv, "f:t:F:sm")) != -1) {
 	if (opt == 'f') {
 	    struct timeval t;
 	    if (approxidate(optarg, &t) == -1) {
@@ -117,6 +117,8 @@ int main(int argc, char *argv[])
 	    options.format = parse_format(optarg);
 	} else if (opt == 's') {
 	    options.skip = true;
+	} else if (opt == 'm') {
+	    options.multiline = true;
 	} else if (opt == ':' || opt == '?') {
 	    errflg = true;
 	}
@@ -177,15 +179,25 @@ void process_file(FILE * file, struct options options)
     ssize_t read;
     size_t max_size = 0;
 
+    bool found_from = 0;
+
     while ((read = getline(&line, &max_size, file)) != -1) {
 	time_t date = parse_date(line, options.format);
 
-	if (date == -1 && !options.skip) {
+	if (date == -1) {
+	    if (options.skip) {
+		continue;
+	    }
+	    if (options.multiline && found_from) {
+		printf("%s", line);
+		continue;
+	    }
 	    fflush(stdout);
 	    fprintf(stderr, "%s: Unparsable line: %s", program_name, line);
 	    exit(EXIT_FAILURE);
 	}
 	if (date >= options.from && date < options.to) {
+	    found_from = 1;
 	    printf("%s", line);
 	} else if (date >= options.to) {
 	    break;
@@ -234,7 +246,7 @@ off_t binary_search(FILE * file, struct options options)
 
 	if ((read = getline(&line, &max_size, file) != -1)) {
 	    time_t timestamp = parse_date(line, options.format);
-	    if (timestamp == -1 && !options.skip) {
+	    if (timestamp == -1 && !options.skip && !options.multiline) {
 		fprintf(stderr, "%s: Found line without date: %s",
 			program_name, line);
 		exit(EXIT_FAILURE);
@@ -261,7 +273,7 @@ off_t binary_search(FILE * file, struct options options)
 	    break;
 	}
 	time_t timestamp = parse_date(line, options.format);
-	if (timestamp == -1 && !options.skip) {
+	if (timestamp == -1 && !options.skip && !options.multiline) {
 	    fprintf(stderr, "%s: Found line without date: %s",
 		    program_name, line);
 	    exit(EXIT_FAILURE);
