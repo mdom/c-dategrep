@@ -11,7 +11,17 @@ not_ok(){
 	printf "not ok $plan $description\n";
 }
 
+check_expections(){
+	test_output stderr_plan stderr &&
+	test_output stdout_plan stdout &&
+	ok ||
+	not_ok
+}
+
 test(){
+	if [ "$plan" != 0 ];then
+		check_expections
+	fi
 	clean_up
 	plan=$(( plan + 1 ))
 	description=$1
@@ -27,24 +37,22 @@ test_output(){
 }
 
 done_testing(){
-	printf "1..$plan\n"
+	check_expections
 	clean_up
+	printf "1..$plan\n"
+	exit 0
 }
 
 dg(){
 	dategrep "$@" input > stdout 2> stderr
 }
 
-stderr_empty(){ [ ! -s stderr ]; }
-stdout_empty(){ [ ! -s stdout ]; }
-
 input() { cat > input;  }
 stdin() { cat > stdin;  }
-stdout(){ cat > stdout; }
-stderr(){ cat > stderr; }
-expect(){ cat > expect; }
+stdout(){ cat > stdout_plan; }
+stderr(){ cat > stderr_plan; }
 
-clean_up(){ rm -f input stdin stdout stderr expect; }
+clean_up(){ rm -f input stdin stdout stderr expect stdout_plan stderr_plan; }
 
 #################
 test "Empty input results in empty output"
@@ -52,11 +60,13 @@ test "Empty input results in empty output"
 input <<EOF
 EOF
 
-dg -f 2010-05-01T00:00:00 -t 2010-05-01T00:00:01 \
-&& stdout_empty \
-&& stderr_empty \
-&& ok \
-|| not_ok
+stdout <<EOF
+EOF
+
+stderr <<EOF
+EOF
+
+dg -f 2010-05-01T00:00:00 -t 2010-05-01T00:00:01
 
 #################
 test "Match all input lines"
@@ -67,17 +77,16 @@ input <<EOF
 2010-05-01T00:00:02 line 3
 EOF
 
-expect <<EOF
+stdout <<EOF
 2010-05-01T00:00:00 line 1
 2010-05-01T00:00:01 line 2
 2010-05-01T00:00:02 line 3
 EOF
 
-dg -f "2010-05-01T00:00:00" -t "2010-05-01T00:00:03" -F "%FT%T" \
-&& test_output stdout expect \
-&& stderr_empty \
-&& ok \
-|| not_ok
+stderr <<EOF
+EOF
+
+dg -f "2010-05-01T00:00:00" -t "2010-05-01T00:00:03" -F "%FT%T"
 
 #################
 test "Match no lines"
@@ -88,14 +97,13 @@ input <<EOF
 2010-05-01T00:00:02 line 3
 EOF
 
-expect <<EOF
+stdout <<EOF
 EOF
 
-dg -f "2010-05-01T00:00:03" -F "%FT%T" \
-&& test_output stdout expect \
-&& stderr_empty \
-&& ok \
-|| not_ok
+stderr <<EOF
+EOF
+
+dg -f "2010-05-01T00:00:03" -F "%FT%T"
 
 #################
 test "Output single line in middle of input"
@@ -106,15 +114,19 @@ input <<EOF
 2010-05-01T00:00:02 line 3
 EOF
 
-expect <<EOF
+stdout <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-dg -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T" \
-&& test_output stdout expect \
-&& stderr_empty \
-&& ok \
-|| not_ok
+stderr <<EOF
+EOF
+
+dg -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
+
+2010-05-01T00:00:01 line 2
+EOF
+
+dg -s -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
 
 #################
 done_testing
