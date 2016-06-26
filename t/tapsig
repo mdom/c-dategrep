@@ -10,7 +10,27 @@ ok(){
 }
 
 not_ok(){
-	printf "not ok $plan $description\n";
+	printf "not ok $plan $description\n"
+}
+
+skip(){
+	skip=$1
+}
+
+todo(){
+	todo=$1
+}
+
+depends_on(){
+	if ! command -v "$1";then
+		skip_all "$1 not installed."
+	fi
+}
+
+skip_all(){
+	clean_up
+	printf "1..0 # SKIP${1+ $1}\n"
+	exit 0
 }
 
 check_expections(){
@@ -23,9 +43,21 @@ check_expections(){
 	fi
 }
 
-tap(){
-	check_expections
+end_current_test(){
+	if [ -n "$skip" ];then
+		printf "ok $plan # SKIP $skip\n"
+		skip=""
+	elif [ -n "$todo" ];then
+		printf "not ok $plan # TODO $todo\n"
+		todo=""
+	else 
+		check_expections
+	fi
 	clean_up
+}
+
+tap(){
+	end_current_test
 	touch stdout_plan stderr_plan
 	plan=$(( plan + 1 ))
 	description=$1
@@ -35,33 +67,33 @@ test_output(){
 	if cmp -s "$1" "$2";then
 		return 0
 	else
-		diff -u "$1" "$2" | sed 's/^/#  /'
+		diff -u "$1" "$2" | diag
 		return 1
 	fi
 }
 
 done_testing(){
-	check_expections
-	clean_up
+	end_current_test
 	printf "1..$plan\n"
 	exit 0
 }
 
-command() {
-	command=$1
-}
-
 call(){
-	if [ -z "$command" ];then
-		printf "Command is unset.\n" >&2
-		exit 1
-	fi
 	if [ -e input ];then
-		$command "$@" input > stdout 2> stderr
+		"$@" input > stdout 2> stderr
 	else
-		$command "$@" > stdout 2> stderr
+		"$@" > stdout 2> stderr
 	fi
 	rc=$?
+}
+
+diag(){
+	sed 's/^/# /'
+}
+
+bail_out(){
+	printf "Bail out!${1+ $1}\n"
+	exit 0
 }
 
 input() { cat > input;  }

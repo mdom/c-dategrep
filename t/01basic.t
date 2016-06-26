@@ -1,14 +1,12 @@
 #!tapsig
 
-command dategrep
-
 #################
 tap "Empty input results in empty output"
 
 input <<EOF
 EOF
 
-call -f 2010-05-01T00:00:00 -t 2010-05-01T00:00:01
+call dategrep -f 2010-05-01T00:00:00 -t 2010-05-01T00:00:01
 
 #################
 tap "Match all input lines"
@@ -25,7 +23,7 @@ stdout <<EOF
 2010-05-01T00:00:02 line 3
 EOF
 
-call -f "2010-05-01T00:00:00" -t "2010-05-01T00:00:03" -F "%FT%T"
+call dategrep -f "2010-05-01T00:00:00" -t "2010-05-01T00:00:03" -F "%FT%T"
 
 #################
 tap "Match no lines"
@@ -36,7 +34,7 @@ input <<EOF
 2010-05-01T00:00:02 line 3
 EOF
 
-call -f "2010-05-01T00:00:03" -F "%FT%T"
+call dategrep -f "2010-05-01T00:00:03" -F "%FT%T"
 
 #################
 tap "Output single line in middle of input"
@@ -51,7 +49,7 @@ stdout <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-call -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
+call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
 
 #################
 tap "Skip dateless lines"
@@ -69,7 +67,7 @@ stderr <<EOF
 dategrep: Found line without date: foo
 EOF
 
-call -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
+call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
 
 #################
 tap "Skip dateless lines"
@@ -85,7 +83,7 @@ stdout <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-call -s -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
+call dategrep -s -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
 
 #################
 tap "Print multine logs"
@@ -103,7 +101,7 @@ stdout <<EOF
 bar
 EOF
 
-call -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"  -F "%FT%T" -m
+call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"  -F "%FT%T" -m
 
 #################
 tap "Error without format"
@@ -118,7 +116,7 @@ EOF
 
 rc 1
 
-call -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"
+call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"
 
 #################
 tap "Getting format from environment"
@@ -132,7 +130,7 @@ stdout <<EOF
 EOF
 
 export DATEGREP_DEFAULT_FORMAT="%FT%T"
-call -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"
+call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"
 unset -v DATEGREP_DEFAULT_FORMAT
 
 
