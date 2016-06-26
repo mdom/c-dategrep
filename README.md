@@ -84,6 +84,12 @@ dategrep directly.
 
   Shows a short help message
 
+# ENVIRONMENT
+
+* DATEGREP\_DEFAULT\_FORMAT
+
+  Overwrites the default for the I<--format> parameter. The syntax is described there.
+
 # LIMITATION
 
 dategrep expects the files to be sorted. If the timestamps are not

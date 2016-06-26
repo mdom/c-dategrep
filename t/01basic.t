@@ -105,6 +105,36 @@ EOF
 
 call -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"  -F "%FT%T" -m
 
+#################
+tap "Error without format"
+
+input <<EOF
+2010-05-01T00:00:01 line 2
+EOF
+
+stderr <<EOF
+dategrep: Found line without date: 2010-05-01T00:00:01 line 2
+EOF
+
+rc 1
+
+call -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"
+
+#################
+tap "Getting format from environment"
+
+input <<EOF
+2010-05-01T00:00:01 line 2
+EOF
+
+stdout <<EOF
+2010-05-01T00:00:01 line 2
+EOF
+
+export DATEGREP_DEFAULT_FORMAT="%FT%T"
+call -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"
+unset -v DATEGREP_DEFAULT_FORMAT
+
 
 #################
 done_testing
