@@ -25,6 +25,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include <stdbool.h>
 #include "approxidate.h"
@@ -38,6 +39,7 @@ typedef struct {
     FILE *file;
     time_t from;
     char *name;
+    pid_t pid;
 } logfile;
 
 struct options {
@@ -51,9 +53,18 @@ struct options {
 off_t binary_search(FILE * file, struct options options);
 void process_file(FILE * file, struct options options);
 time_t parse_date(char *string, char *format);
+char *file_extension(const char *filename);
 void print_usage(void);
 void print_version(void);
 void parse_arguments(int argc, char *argv[], struct options *options);
+
+char *file_extension(const char *filename)
+{
+    const char *dot = strrchr(filename, '.');
+    if (!dot || dot == filename)
+	return "";
+    return dot + 1;
+}
 
 void print_usage(void)
 {
@@ -169,26 +180,63 @@ int main(int argc, char *argv[])
 
 	for (int i = 0; optind < argc; optind++, i++) {
 
-	    FILE *file = fopen(argv[optind], "r");
+	    char *filename = argv[optind];
 
+	    FILE *file = fopen(filename, "r");
 	    if (!file) {
 		fprintf(stderr, "%s: Can't open file %s: %s.\n",
 			program_name, argv[optind], strerror(errno));
 		exit(EXIT_FAILURE);
 	    }
+
 	    args[i] = (logfile) {
 	    /* *INDENT-OFF* */
 		.file = file,
-		.name = argv[optind],
+		.name = filename,
 	    /* *INDENT-ON* */
 	    };
+
+	    char *extension = file_extension(args[i].name);
+	    if (extension
+		&& (strcmp(extension, "gz") == 0
+		    || strcmp(extension, "z") == 0)) {
+		int pipes[2];
+		pipe(pipes);
+		pid_t pid;
+		if ((pid = fork()) == 0) {
+		    // child
+		    close(pipes[0]);
+		    int file_fd = fileno(file);
+		    dup2(file_fd, 0);
+		    dup2(pipes[1], 1);
+		    execlp("gzip", "gzip", "-c", "-d", (char *) NULL);
+		} else if (pid == -1) {
+		    // fork failed
+		    fprintf(stderr, "%s: Cannot fork gzip: %s\n",
+			    program_name, strerror(errno));
+		    exit(EXIT_FAILURE);
+		} else {
+		    // parent
+		    close(pipes[1]);
+		    args[i].file = fdopen(pipes[0], "r");
+		    args[i].pid = pid;
+		}
+	    }
+
 	}
 
 	for (int i = 0; i < no_files; i++) {
 	    logfile current = args[i];
 	    FILE *file = current.file;
 
-	    off_t offset = binary_search(file, options);
+	    if (current.pid) {
+		process_file(file, options);
+		fclose(file);
+		int stat_loc = 0;
+		waitpid(current.pid, &stat_loc, 0);
+	    } else {
+
+		off_t offset = binary_search(file, options);
 
 	    fseeko(file, offset, SEEK_SET);
 	    process_file(file, options);
