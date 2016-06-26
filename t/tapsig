@@ -1,0 +1,84 @@
+#!/bin/sh
+
+PATH=.:$PATH
+
+plan=0
+rc_plan=0
+
+ok(){
+	printf "ok $plan $description\n";
+}
+
+not_ok(){
+	printf "not ok $plan $description\n";
+}
+
+check_expections(){
+	if [ "$plan" != 0 ];then
+		test_output stderr_plan stderr &&
+		test_output stdout_plan stdout &&
+		[ ${rc-0} -eq $rc_plan ] &&
+		ok ||
+		not_ok
+	fi
+}
+
+tap(){
+	check_expections
+	clean_up
+	touch stdout_plan stderr_plan
+	plan=$(( plan + 1 ))
+	description=$1
+}
+
+test_output(){
+	if cmp -s "$1" "$2";then
+		return 0
+	else
+		diff -u "$1" "$2" | sed 's/^/#  /'
+		return 1
+	fi
+}
+
+done_testing(){
+	check_expections
+	clean_up
+	printf "1..$plan\n"
+	exit 0
+}
+
+command() {
+	command=$1
+}
+
+call(){
+	if [ -z "$command" ];then
+		printf "Command is unset.\n" >&2
+		exit 1
+	fi
+	if [ -e input ];then
+		$command "$@" input > stdout 2> stderr
+	else
+		$command "$@" > stdout 2> stderr
+	fi
+	rc=$?
+}
+
+input() { cat > input;  }
+stdin() { cat > stdin;  }
+stdout(){ cat > stdout_plan; }
+stderr(){ cat > stderr_plan; }
+
+rc() { rc_plan=$1; }
+
+clean_up(){
+	rm -f input stdin stdout stderr expect stdout_plan stderr_plan;
+	rc_plan=0
+}
+
+test_file=$1
+shift
+
+if [ -e "$test_file" ];then
+	. "$test_file"
+fi

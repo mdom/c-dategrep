@@ -1,15 +1,11 @@
-#!/bin/sh
+#!tapsig
 
-printf "1..1\n"
+command indent
 
-indent -kr ../dategrep.c -o indented.c
+tap "Check indentation"
 
-if cmp -s indented.c ../dategrep.c;then
-	printf "ok 1 "
-else
-	printf "not ok 1 "
-fi
+cat dategrep.c | stdout
 
-printf "Check indentation\n"
+call -kr -st dategrep.c
 
-rm indented.c
+done_testing
