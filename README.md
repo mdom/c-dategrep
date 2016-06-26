@@ -72,7 +72,7 @@ dategrep directly.
   Defines a strftime-based FORMAT that is used to parse the input
   lines for a date. The first date found on a line is used.
 
-  This is a required parameter.
+  This parameter defaults to _rsyslog_.
 
   Additionally, dategrep supports named formats:
 
