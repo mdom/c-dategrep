@@ -51,6 +51,9 @@ struct options {
 off_t binary_search(FILE * file, struct options options);
 void process_file(FILE * file, struct options options);
 time_t parse_date(char *string, char *format);
+void print_usage(void);
+void print_version(void);
+void parse_arguments(int argc, char *argv[], struct options *options);
 
 void print_usage(void)
 {
