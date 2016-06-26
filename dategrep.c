@@ -85,6 +85,43 @@ char *parse_format(char *format)
     return new_format;
 }
 
+
+void parse_arguments(int argc, char *argv[], struct options *options)
+{
+    int opt;
+    while ((opt = getopt(argc, argv, "f:t:F:smh")) != -1) {
+	if (opt == 'f') {
+	    struct timeval t;
+	    if (approxidate(optarg, &t) == -1) {
+		fprintf(stderr, "%s: Can't parse argument to --from.\n",
+			program_name);
+		exit(EXIT_FAILURE);
+	    }
+	    options->from = t.tv_sec;
+	} else if (opt == 't') {
+	    struct timeval t;
+	    if (approxidate(optarg, &t) == -1) {
+		fprintf(stderr, "%s: Can't parse argument to --to.\n",
+			program_name);
+		exit(EXIT_FAILURE);
+	    }
+	    options->to = t.tv_sec;
+	} else if (opt == 'F') {
+	    options->format = parse_format(optarg);
+	} else if (opt == 's') {
+	    options->skip = true;
+	} else if (opt == 'm') {
+	    options->multiline = true;
+	} else if (opt == 'h') {
+	    print_usage();
+	    exit(EXIT_SUCCESS);
+	} else if (opt == ':' || opt == '?') {
+	    print_usage();
+	    exit(EXIT_FAILURE);
+	}
+    }
+}
+
 int main(int argc, char *argv[])
 {
     program_name = argv[0];
@@ -102,40 +139,7 @@ int main(int argc, char *argv[])
 	options.format = default_format;
     }
 
-    int opt;
-
-    while ((opt = getopt(argc, argv, "f:t:F:smh")) != -1) {
-	if (opt == 'f') {
-	    struct timeval t;
-	    if (approxidate(optarg, &t) == -1) {
-		fprintf(stderr, "%s: Can't parse argument to --from.\n",
-			program_name);
-		exit(EXIT_FAILURE);
-	    }
-	    options.from = t.tv_sec;
-	} else if (opt == 't') {
-	    struct timeval t;
-	    if (approxidate(optarg, &t) == -1) {
-		fprintf(stderr, "%s: Can't parse argument to --to.\n",
-			program_name);
-		exit(EXIT_FAILURE);
-	    }
-	    options.to = t.tv_sec;
-
-	} else if (opt == 'F') {
-	    options.format = parse_format(optarg);
-	} else if (opt == 's') {
-	    options.skip = true;
-	} else if (opt == 'm') {
-	    options.multiline = true;
-	} else if (opt == 'h') {
-	    print_usage();
-	    exit(EXIT_SUCCESS);
-	} else if (opt == ':' || opt == '?') {
-	    print_usage();
-	    exit(EXIT_FAILURE);
-	}
-    }
+    parse_arguments(argc, argv, &options);
 
     if (options.from >= options.to) {
 	fprintf(stderr, "%s: --from larger or equal to --to.\n",
