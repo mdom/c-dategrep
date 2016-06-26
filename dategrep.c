@@ -238,9 +238,12 @@ int main(int argc, char *argv[])
 
 		off_t offset = binary_search(file, options);
 
-	    fseeko(file, offset, SEEK_SET);
-	    process_file(file, options);
-	    fclose(file);
+		if (offset != -1) {
+		    fseeko(file, offset, SEEK_SET);
+		    process_file(file, options);
+		}
+		fclose(file);
+	    }
 	}
     } else {
 	process_file(stdin, options);
