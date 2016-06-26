@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include "approxidate.h"
+#include "config.h"
 
 extern char *optarg;
 extern int optind, opterr, optopt;
@@ -55,6 +56,14 @@ void print_usage(void)
 {
     fprintf(stderr, "Usage: %s [-f DATE] [-t DATE] [-F FORMAT]\n",
 	    program_name);
+}
+
+void print_version(void)
+{
+    printf("dategrep version " VERSION "\n\n\
+Copyright (C) Mario Domgoergen 2016\n\
+License GPLv3+: GNU GPL version 3 or later.\n\
+This is free software, you are free to modify and redistribute it.\n");
 }
 
 time_t parse_date(char *string, char *format)
@@ -89,7 +98,7 @@ char *parse_format(char *format)
 void parse_arguments(int argc, char *argv[], struct options *options)
 {
     int opt;
-    while ((opt = getopt(argc, argv, "f:t:F:smh")) != -1) {
+    while ((opt = getopt(argc, argv, "f:t:F:smhv")) != -1) {
 	if (opt == 'f') {
 	    struct timeval t;
 	    if (approxidate(optarg, &t) == -1) {
@@ -114,6 +123,9 @@ void parse_arguments(int argc, char *argv[], struct options *options)
 	    options->multiline = true;
 	} else if (opt == 'h') {
 	    print_usage();
+	    exit(EXIT_SUCCESS);
+	} else if (opt == 'v') {
+	    print_version();
 	    exit(EXIT_SUCCESS);
 	} else if (opt == ':' || opt == '?') {
 	    print_usage();
