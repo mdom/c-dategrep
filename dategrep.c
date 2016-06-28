@@ -223,6 +223,13 @@ int main(int argc, char *argv[])
 	    log->file = stdin;
 	} else {
 	    log->file = open_file(log->filename);
+	    off_t offset = binary_search(log->file, options);
+	    if (offset == -1) {
+		i--;
+		no_files--;
+	    } else {
+		fseeko(log->file, offset, SEEK_SET);
+	    }
 	}
     }
 
@@ -230,22 +237,12 @@ int main(int argc, char *argv[])
 	logfile *log = args[i];
 	FILE *file = log->file;
 
+	process_file(log, options);
+	fclose(file);
+
 	if (log->pid) {
-	    process_file(log, options);
-	    fclose(file);
 	    int stat_loc = 0;
 	    waitpid(log->pid, &stat_loc, 0);
-	} else if (strcmp(log->filename, "-") == 0) {
-	    process_file(log, options);
-	} else {
-
-	    off_t offset = binary_search(file, options);
-
-	    if (offset != -1) {
-		fseeko(file, offset, SEEK_SET);
-		process_file(log, options);
-	    }
-	    fclose(file);
 	}
     }
     for (int i = 0; i < no_files; i++) {
