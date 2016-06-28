@@ -58,6 +58,7 @@ void print_usage(void);
 void print_version(void);
 void parse_arguments(int argc, char *argv[], struct options *options);
 FILE *open_file(const char *filename);
+void *safe_malloc(size_t size);
 
 char *file_extension(const char *filename)
 {
@@ -174,82 +175,81 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
     }
 
-    if (optind < argc) {
+    int no_files = argc - optind;
+    if (no_files == 0) {
+	no_files = 1;
+	argv = safe_malloc(sizeof(char *));
+	argv[0] = "-";
+	optind = 0;
+    }
+    logfile *args[no_files];
 
-	int no_files = argc - optind;
-	logfile *args[no_files];
+    for (int i = 0; i < no_files; i++) {
 
-	for (int i = 0; i < no_files; i++) {
+	char *filename = argv[optind++];
 
-	    char *filename = argv[optind++];
+	args[i] = safe_malloc(sizeof(logfile));
+	logfile *log = args[i];
+	memset(log, 0, sizeof(logfile));
+	log->filename = filename;
 
-	    args[i] = malloc(sizeof(logfile));
-	    logfile *log = args[i];
-	    memset(log, 0, sizeof(logfile));
-	    log->filename = filename;
-
-	    char *extension = file_extension(log->filename);
-	    if (extension
-		&& (strcmp(extension, "gz") == 0
-		    || strcmp(extension, "z") == 0)) {
-		int pipes[2];
-		pipe(pipes);
-		pid_t pid;
-		if ((pid = fork()) == 0) {
-		    // child
-		    close(pipes[0]);
-		    FILE *input_file = open_file(log->filename);
-		    int file_fd = fileno(input_file);
-		    dup2(file_fd, 0);
-		    dup2(pipes[1], 1);
-		    execlp("gzip", "gzip", "-c", "-d", (char *) NULL);
-		} else if (pid == -1) {
-		    // fork failed
-		    fprintf(stderr, "%s: Cannot fork gzip: %s\n",
-			    program_name, strerror(errno));
-		    exit(EXIT_FAILURE);
-		} else {
-		    // parent
-		    close(pipes[1]);
-		    log->file = fdopen(pipes[0], "r");
-		    log->pid = pid;
-		}
-	    } else if (strcmp(log->filename, "-") == 0) {
-		log->file = stdin;
+	char *extension = file_extension(log->filename);
+	if (extension
+	    && (strcmp(extension, "gz") == 0
+		|| strcmp(extension, "z") == 0)) {
+	    int pipes[2];
+	    pipe(pipes);
+	    pid_t pid;
+	    if ((pid = fork()) == 0) {
+		// child
+		close(pipes[0]);
+		FILE *input_file = open_file(log->filename);
+		int file_fd = fileno(input_file);
+		dup2(file_fd, 0);
+		dup2(pipes[1], 1);
+		execlp("gzip", "gzip", "-c", "-d", (char *) NULL);
+	    } else if (pid == -1) {
+		// fork failed
+		fprintf(stderr, "%s: Cannot fork gzip: %s\n",
+			program_name, strerror(errno));
+		exit(EXIT_FAILURE);
 	    } else {
-		log->file = open_file(log->filename);
+		// parent
+		close(pipes[1]);
+		log->file = fdopen(pipes[0], "r");
+		log->pid = pid;
 	    }
-
+	} else if (strcmp(log->filename, "-") == 0) {
+	    log->file = stdin;
+	} else {
+	    log->file = open_file(log->filename);
 	}
+    }
 
-	for (int i = 0; i < no_files; i++) {
-	    logfile *current = args[i];
+    for (int i = 0; i < no_files; i++) {
+	logfile *log = args[i];
+	FILE *file = log->file;
 
-	}
+	if (log->pid) {
+	    process_file(log, options);
+	    fclose(file);
+	    int stat_loc = 0;
+	    waitpid(log->pid, &stat_loc, 0);
+	} else if (strcmp(log->filename, "-") == 0) {
+	    process_file(log, options);
+	} else {
 
-	for (int i = 0; i < no_files; i++) {
-	    logfile *log = args[i];
-	    FILE *file = log->file;
+	    off_t offset = binary_search(file, options);
 
-	    if (log->pid) {
+	    if (offset != -1) {
+		fseeko(file, offset, SEEK_SET);
 		process_file(log, options);
-		fclose(file);
-		int stat_loc = 0;
-		waitpid(log->pid, &stat_loc, 0);
-	    } else {
-
-		off_t offset = binary_search(file, options);
-
-		if (offset != -1) {
-		    fseeko(file, offset, SEEK_SET);
-		    process_file(log, options);
-		}
-		fclose(file);
 	    }
+	    fclose(file);
 	}
-    } else {
-	logfile *log = &(logfile) {.filename = "-",.file = stdin };
-	process_file(log, options);
+    }
+    for (int i = 0; i < no_files; i++) {
+	free(args[i]);
     }
 }
 
@@ -376,4 +376,14 @@ off_t binary_search(FILE * file, struct options options)
     }
     free(line);
     return -1;
+}
+
+void *safe_malloc(size_t size)
+{
+    void *ptr = malloc(size);
+    if (!ptr) {
+	fprintf(stderr, "Can't allocate memory!\n");
+	exit(EXIT_FAILURE);
+    }
+    return ptr;
 }
