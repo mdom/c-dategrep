@@ -57,6 +57,7 @@ char *file_extension(const char *filename);
 void print_usage(void);
 void print_version(void);
 void parse_arguments(int argc, char *argv[], struct options *options);
+FILE *open_file(const char *filename);
 
 char *file_extension(const char *filename)
 {
@@ -182,16 +183,8 @@ int main(int argc, char *argv[])
 
 	    char *filename = argv[optind++];
 
-	    FILE *file = fopen(filename, "r");
-	    if (!file) {
-		fprintf(stderr, "%s: Can't open file %s: %s.\n",
-			program_name, filename, strerror(errno));
-		exit(EXIT_FAILURE);
-	    }
-
 	    args[i] = malloc(sizeof(logfile));
 	    memset(args[i], 0, sizeof(logfile));
-	    args[i]->file = file;
 	    args[i]->name = filename;
 
 	    char *extension = file_extension(args[i]->name);
@@ -204,7 +197,8 @@ int main(int argc, char *argv[])
 		if ((pid = fork()) == 0) {
 		    // child
 		    close(pipes[0]);
-		    int file_fd = fileno(file);
+		    FILE *input_file = open_file(args[i]->name);
+		    int file_fd = fileno(input_file);
 		    dup2(file_fd, 0);
 		    dup2(pipes[1], 1);
 		    execlp("gzip", "gzip", "-c", "-d", (char *) NULL);
@@ -219,6 +213,8 @@ int main(int argc, char *argv[])
 		    args[i]->file = fdopen(pipes[0], "r");
 		    args[i]->pid = pid;
 		}
+	    } else {
+		args[i]->file = open_file(log->name);
 	    }
 
 	}
@@ -279,6 +275,17 @@ void process_file(FILE * file, struct options options)
 	}
     }
     free(line);
+}
+
+FILE *open_file(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+	fprintf(stderr, "%s: Can't open file %s: %s.\n",
+		program_name, filename, strerror(errno));
+	exit(EXIT_FAILURE);
+    }
+    return file;
 }
 
 
