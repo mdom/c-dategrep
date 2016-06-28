@@ -51,7 +51,7 @@ struct options {
 };
 
 off_t binary_search(FILE * file, struct options options);
-void process_file(FILE * file, struct options options);
+void process_file(logfile * log, struct options options);
 time_t parse_date(char *string, char *format);
 char *file_extension(const char *filename);
 void print_usage(void);
@@ -222,7 +222,6 @@ int main(int argc, char *argv[])
 
 	for (int i = 0; i < no_files; i++) {
 	    logfile *current = args[i];
-	    FILE *file = current->file;
 
 	}
 
@@ -231,7 +230,7 @@ int main(int argc, char *argv[])
 	    FILE *file = log->file;
 
 	    if (log->pid) {
-		process_file(file, options);
+		process_file(log, options);
 		fclose(file);
 		int stat_loc = 0;
 		waitpid(log->pid, &stat_loc, 0);
@@ -241,17 +240,18 @@ int main(int argc, char *argv[])
 
 		if (offset != -1) {
 		    fseeko(file, offset, SEEK_SET);
-		    process_file(file, options);
+		    process_file(log, options);
 		}
 		fclose(file);
 	    }
 	}
     } else {
-	process_file(stdin, options);
+	logfile *log = &(logfile) {.filename = "-",.file = stdin };
+	process_file(log, options);
     }
 }
 
-void process_file(FILE * file, struct options options)
+void process_file(logfile * log, struct options options)
 {
     char *line = NULL;
     ssize_t read;
@@ -259,7 +259,7 @@ void process_file(FILE * file, struct options options)
 
     bool found_from = 0;
 
-    while ((read = getline(&line, &max_size, file)) != -1) {
+    while ((read = getline(&line, &max_size, log->file)) != -1) {
 	time_t date = parse_date(line, options.format);
 
 	if (date == -1) {
