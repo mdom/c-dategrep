@@ -214,6 +214,8 @@ int main(int argc, char *argv[])
 		    log->file = fdopen(pipes[0], "r");
 		    log->pid = pid;
 		}
+	    } else if (strcmp(log->filename, "-") == 0) {
+		log->file = stdin;
 	    } else {
 		log->file = open_file(log->filename);
 	    }
