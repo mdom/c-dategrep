@@ -129,9 +129,9 @@ stdout <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-export DATEGREP_DEFAULT_FORMAT="%FT%T"
+export DATEGREP_FORMAT="%FT%T"
 call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"
-unset -v DATEGREP_DEFAULT_FORMAT
+unset -v DATEGREP_FORMAT
 
 
 #################

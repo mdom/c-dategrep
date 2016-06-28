@@ -41,7 +41,7 @@ The first date found on a line is used.
 
 This is a required parameter.
 Alternatively you can supply the format via the environment variable
-.I DATEGREP_DEFAULT_FORMAT
+.I DATEGREP_FORMAT
 .
 
 Additionally, dategrep supports the following named formats:
@@ -67,7 +67,7 @@ are printed. Dateless lines before the first matching line are skipped.
 Shows a short help message
 .SH ENVIRONMENT
 .TP
-.I DATEGREP_DEFAULT_FORMAT
+.I DATEGREP_FORMAT
 Default for the \f[I]--format\f[] parameter.
 The syntax is described there.
 .SH LIMITATION

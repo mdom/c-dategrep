@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 	.multiline = false,
     };
 
-    char *default_format = getenv("DATEGREP_DEFAULT_FORMAT");
+    char *default_format = getenv("DATEGREP_FORMAT");
     if (default_format) {
 	options.format = default_format;
     }
