@@ -1,0 +1,102 @@
+.TH dategrep 1
+.SH NAME
+dategrep - print lines matching a date range
+.SH SYNOPSIS
+dategrep [-f FROM] [-t TO] [-F FORMAT] [-s] [-m] [FILES...]
+.SH DESCRIPTION
+.I dategrep
+searches the named input
+.I FILES
+for lines containing a timestamp in the time range
+.I FROM
+until
+.I TO
+and prints matching lines.
+.PP
+If no files are named, or the if a single hyphen is given as file name,
+lines are read via stdin. Processing normal files are normally faster
+though, as
+.I dategrep
+can then do a binary search for the first matching line.
+.PP
+Files with a file name ending in
+.I .gz
+or
+.I .z
+will be automatically piped through gzip.
+.SH OPTIONS
+.TP
+.BI \-f " DATETIME"
+Print all lines from DATETIME inclusively.
+Defaults to Jan 1, 1970 00:00:00 GMT.
+.TP
+.BI \-t " DATETIME"
+Print all lines until DATESPEC exclusively.
+Default to the current time.
+.TP
+.BI \-F " FORMAT"
+Defines a strftime-based FORMAT that is used to parse the input lines
+for a date.
+The first date found on a line is used.
+
+This is a required parameter.
+Alternatively you can supply the format via the environment variable
+.I DATEGREP_DEFAULT_FORMAT
+.
+
+Additionally, dategrep supports the following named formats:
+.RS
+.IP *
+.B syslog
+%b %e %H:%M:%S"
+.IP *
+.B apache
+"%d/%b/%Y:%H:%M:%S %z"
+.IP *
+.B iso8601
+"%Y-%m-%dT%H:%M:%S"
+.RE
+.TP
+.B -s
+Skip lines without a parsable date.
+.TP
+.B -m
+Enables multiline mode. All lines after a matching line without a date
+are printed. Dateless lines before the first matching line are skipped.
+.IP -h
+Shows a short help message
+.SH ENVIRONMENT
+.TP
+.I DATEGREP_DEFAULT_FORMAT
+Default for the \f[I]--format\f[] parameter.
+The syntax is described there.
+.SH LIMITATION
+dategrep expects the files to be sorted.
+If the timestamps are not ascending, dategrep might be exiting before
+the last line in its date range is printed.
+.PP
+Compressed files are just piped into dategrep via bzcat or gzip.
+.SH EXAMPLES
+dategrep \-f 12:00 \-t 12:15 \-format "%b %d %H:%M:%S" syslog
+.PP
+dategrep \-t 12:15 \-F "%b %d %H:%M:%S" syslog
+.PP
+cat syslog | dategrep -t 12:15
+.SH SEE ALSO
+\f[I]strftime(2)\f[]
+.SH COPYRIGHT AND LICENSE
+Copyright 2016 Mario Domgoergen <mario@domgoergen.com>
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program.
+If not, see <http://www.gnu.org/licenses/>.
