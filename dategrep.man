@@ -83,7 +83,7 @@ dategrep \-t 12:15 \-F "%b %d %H:%M:%S" syslog
 .PP
 cat syslog | dategrep -t 12:15
 .SH SEE ALSO
-\f[I]strftime(2)\f[]
+.I strftime(2)
 .SH COPYRIGHT AND LICENSE
 Copyright 2016 Mario Domgoergen <mario@domgoergen.com>
 
