@@ -184,10 +184,11 @@ int main(int argc, char *argv[])
 	    char *filename = argv[optind++];
 
 	    args[i] = malloc(sizeof(logfile));
-	    memset(args[i], 0, sizeof(logfile));
-	    args[i]->filename = filename;
+	    logfile *log = args[i];
+	    memset(log, 0, sizeof(logfile));
+	    log->filename = filename;
 
-	    char *extension = file_extension(args[i]->filename);
+	    char *extension = file_extension(log->filename);
 	    if (extension
 		&& (strcmp(extension, "gz") == 0
 		    || strcmp(extension, "z") == 0)) {
@@ -197,7 +198,7 @@ int main(int argc, char *argv[])
 		if ((pid = fork()) == 0) {
 		    // child
 		    close(pipes[0]);
-		    FILE *input_file = open_file(args[i]->filename);
+		    FILE *input_file = open_file(log->filename);
 		    int file_fd = fileno(input_file);
 		    dup2(file_fd, 0);
 		    dup2(pipes[1], 1);
@@ -210,11 +211,11 @@ int main(int argc, char *argv[])
 		} else {
 		    // parent
 		    close(pipes[1]);
-		    args[i]->file = fdopen(pipes[0], "r");
-		    args[i]->pid = pid;
+		    log->file = fdopen(pipes[0], "r");
+		    log->pid = pid;
 		}
 	    } else {
-		args[i]->file = open_file(args[i]->filename);
+		log->file = open_file(log->filename);
 	    }
 
 	}
@@ -223,11 +224,17 @@ int main(int argc, char *argv[])
 	    logfile *current = args[i];
 	    FILE *file = current->file;
 
-	    if (current->pid) {
+	}
+
+	for (int i = 0; i < no_files; i++) {
+	    logfile *log = args[i];
+	    FILE *file = log->file;
+
+	    if (log->pid) {
 		process_file(file, options);
 		fclose(file);
 		int stat_loc = 0;
-		waitpid(current->pid, &stat_loc, 0);
+		waitpid(log->pid, &stat_loc, 0);
 	    } else {
 
 		off_t offset = binary_search(file, options);
