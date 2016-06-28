@@ -1,94 +1,94 @@
 #!tapsig
 
 #################
-tap "Empty input results in empty output"
+name "Empty input results in empty output"
 
-input <<EOF
+cat > input <<EOF
 EOF
 
-call dategrep -f 2010-05-01T00:00:00 -t 2010-05-01T00:00:01
+tap dategrep -f 2010-05-01T00:00:00 -t 2010-05-01T00:00:01 input
 
 #################
-tap "Match all input lines"
+name "Match all input lines"
 
-input <<EOF
+cat > input <<EOF
 2010-05-01T00:00:00 line 1
 2010-05-01T00:00:01 line 2
 2010-05-01T00:00:02 line 3
 EOF
 
-stdout <<EOF
+stdout_is <<EOF
 2010-05-01T00:00:00 line 1
 2010-05-01T00:00:01 line 2
 2010-05-01T00:00:02 line 3
 EOF
 
-call dategrep -f "2010-05-01T00:00:00" -t "2010-05-01T00:00:03" -F "%FT%T"
+tap dategrep -f "2010-05-01T00:00:00" -t "2010-05-01T00:00:03" -F "%FT%T" input
 
 #################
-tap "Match no lines"
+name "Match no lines"
 
-input <<EOF
+cat > input <<EOF
 2010-05-01T00:00:00 line 1
 2010-05-01T00:00:01 line 2
 2010-05-01T00:00:02 line 3
 EOF
 
-call dategrep -f "2010-05-01T00:00:03" -F "%FT%T"
+tap dategrep -f "2010-05-01T00:00:03" -F "%FT%T" input
 
 #################
-tap "Output single line in middle of input"
+name "Output single line in middle of input"
 
-input <<EOF
+cat > input <<EOF
 2010-05-01T00:00:00 line 1
 2010-05-01T00:00:01 line 2
 2010-05-01T00:00:02 line 3
 EOF
 
-stdout <<EOF
+stdout_is <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
+tap dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T" input
 
 #################
-tap "Skip dateless lines"
+name "Skip dateless lines"
 
-input <<EOF
+cat > input <<EOF
 2010-05-01T00:00:00 line 1
 foo
 2010-05-01T00:00:01 line 2
 2010-05-01T00:00:02 line 3
 EOF
 
-rc 1
+rc_is 1
 
-stderr <<EOF
+stderr_is <<EOF
 dategrep: Found line without date: foo
 EOF
 
-call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
+tap dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T" input
 
 #################
-tap "Skip dateless lines"
+name "Skip dateless lines"
 
-input <<EOF
+cat > input <<EOF
 2010-05-01T00:00:00 line 1
 foo
 2010-05-01T00:00:01 line 2
 2010-05-01T00:00:02 line 3
 EOF
 
-stdout <<EOF
+stdout_is <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-call dategrep -s -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
+tap dategrep -s -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T" input
 
 #################
-tap "Print multine logs"
+name "Print multine logs"
 
-input <<EOF
+cat > input <<EOF
 2010-05-01T00:00:00 line 1
 foo
 2010-05-01T00:00:01 line 2
@@ -96,41 +96,41 @@ bar
 2010-05-01T00:00:02 line 3
 EOF
 
-stdout <<EOF
+stdout_is <<EOF
 2010-05-01T00:00:01 line 2
 bar
 EOF
 
-call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"  -F "%FT%T" -m
+tap dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"  -F "%FT%T" -m input
 
 #################
-tap "Error without format"
+name "Error without format"
 
-input <<EOF
+cat > input <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-stderr <<EOF
+stderr_is <<EOF
 dategrep: Found line without date: 2010-05-01T00:00:01 line 2
 EOF
 
-rc 1
+rc_is 1
 
-call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"
+tap dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" input
 
 #################
-tap "Getting format from environment"
+name "Getting format from environment"
 
-input <<EOF
+cat > input <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-stdout <<EOF
+stdout_is <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
 export DATEGREP_FORMAT="%FT%T"
-call dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02"
+tap dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" input
 unset -v DATEGREP_FORMAT
 
 

@@ -2,10 +2,10 @@
 
 depends_on indent
 
-tap "Check indentation"
+name "Check indentation"
 
-cat dategrep.c | stdout
+cat dategrep.c | stdout_is
 
-call indent -kr -st dategrep.c
+tap indent -kr -st dategrep.c
 
 done_testing

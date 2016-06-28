@@ -6,11 +6,11 @@ plan=0
 rc_plan=0
 
 ok(){
-	printf "ok $plan $description\n";
+	printf "ok $plan${name+ $name}\n";
 }
 
 not_ok(){
-	printf "not ok $plan $description\n"
+	printf "not ok $plan${name+ $name}\n"
 }
 
 skip(){
@@ -43,24 +43,8 @@ check_expections(){
 	fi
 }
 
-end_current_test(){
-	if [ -n "$skip" ];then
-		printf "ok $plan # SKIP $skip\n"
-		skip=""
-	elif [ -n "$todo" ];then
-		printf "not ok $plan # TODO $todo\n"
-		todo=""
-	else 
-		check_expections
-	fi
-	clean_up
-}
-
-tap(){
-	end_current_test
-	touch stdout_plan stderr_plan
-	plan=$(( plan + 1 ))
-	description=$1
+name(){
+	name=$1
 }
 
 test_output(){
@@ -73,22 +57,43 @@ test_output(){
 }
 
 done_testing(){
-	end_current_test
 	printf "1..$plan\n"
 	exit 0
 }
 
-call(){
-	if [ -e input ];then
-		"$@" input > stdout 2> stderr
+maybe_touch(){
+	for i in "$@";do
+		[ -e "$i" ] || touch "$i"
+	done
+}
+
+tap(){
+	maybe_touch stdout_plan stderr_plan
+	plan=$(( plan + 1 ))
+	if [ -n "$skip" ];then
+		printf "ok $plan # SKIP $skip\n"
+		skip=""
+	elif [ -n "$todo" ];then
+		printf "not ok $plan # TODO $todo\n"
+		todo=""
 	else
-		"$@" > stdout 2> stderr
+		if [ -e stdin ];then
+			"$@" < stdin > stdout 2> stderr
+		else	
+			"$@" > stdout 2> stderr
+		fi
+		rc=$?
+		check_expections
 	fi
-	rc=$?
+	clean_up
 }
 
 diag(){
-	sed 's/^/# /'
+	if [ -n "$1" ];then
+		printf "# $1\n"
+	else
+		sed 's/^/# /'
+	fi
 }
 
 bail_out(){
@@ -96,21 +101,25 @@ bail_out(){
 	exit 0
 }
 
-input() { cat > input;  }
-stdin() { cat > stdin;  }
-stdout(){ cat > stdout_plan; }
-stderr(){ cat > stderr_plan; }
+stdout_is(){ cat > stdout_plan; }
+stderr_is(){ cat > stderr_plan; }
+stdin(){ cat > stdin; }
 
-rc() { rc_plan=$1; }
+rc_is() { rc_plan=$1; }
 
 clean_up(){
-	rm -f input stdin stdout stderr expect stdout_plan stderr_plan;
+	rm -f stdout stderr stdin stdout_plan stderr_plan;
 	rc_plan=0
 }
 
-test_file=$1
-shift
-
-if [ -e "$test_file" ];then
-	. "$test_file"
+if [ -e "$1" ];then
+	. "$1"
+	## this code should not be reached
+	if [ $plan -gt 0 ];then
+		printf "# Tests were run but done_testing() was not seen.\n" >&2
+		exit 1
+	fi
 fi
+
+exit 0
+
