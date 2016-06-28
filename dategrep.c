@@ -176,27 +176,25 @@ int main(int argc, char *argv[])
     if (optind < argc) {
 
 	int no_files = argc - optind;
-	logfile args[no_files];
+	logfile *args[no_files];
 
-	for (int i = 0; optind < argc; optind++, i++) {
+	for (int i = 0; i < no_files; i++) {
 
-	    char *filename = argv[optind];
+	    char *filename = argv[optind++];
 
 	    FILE *file = fopen(filename, "r");
 	    if (!file) {
 		fprintf(stderr, "%s: Can't open file %s: %s.\n",
-			program_name, argv[optind], strerror(errno));
+			program_name, filename, strerror(errno));
 		exit(EXIT_FAILURE);
 	    }
 
-	    args[i] = (logfile) {
-	    /* *INDENT-OFF* */
-		.file = file,
-		.name = filename,
-	    /* *INDENT-ON* */
-	    };
+	    args[i] = malloc(sizeof(logfile));
+	    memset(args[i], 0, sizeof(logfile));
+	    args[i]->file = file;
+	    args[i]->name = filename;
 
-	    char *extension = file_extension(args[i].name);
+	    char *extension = file_extension(args[i]->name);
 	    if (extension
 		&& (strcmp(extension, "gz") == 0
 		    || strcmp(extension, "z") == 0)) {
@@ -218,22 +216,22 @@ int main(int argc, char *argv[])
 		} else {
 		    // parent
 		    close(pipes[1]);
-		    args[i].file = fdopen(pipes[0], "r");
-		    args[i].pid = pid;
+		    args[i]->file = fdopen(pipes[0], "r");
+		    args[i]->pid = pid;
 		}
 	    }
 
 	}
 
 	for (int i = 0; i < no_files; i++) {
-	    logfile current = args[i];
-	    FILE *file = current.file;
+	    logfile *current = args[i];
+	    FILE *file = current->file;
 
-	    if (current.pid) {
+	    if (current->pid) {
 		process_file(file, options);
 		fclose(file);
 		int stat_loc = 0;
-		waitpid(current.pid, &stat_loc, 0);
+		waitpid(current->pid, &stat_loc, 0);
 	    } else {
 
 		off_t offset = binary_search(file, options);
