@@ -38,7 +38,7 @@ char const *program_name;
 typedef struct {
     FILE *file;
     time_t from;
-    char *name;
+    char *filename;
     pid_t pid;
 } logfile;
 
@@ -185,9 +185,9 @@ int main(int argc, char *argv[])
 
 	    args[i] = malloc(sizeof(logfile));
 	    memset(args[i], 0, sizeof(logfile));
-	    args[i]->name = filename;
+	    args[i]->filename = filename;
 
-	    char *extension = file_extension(args[i]->name);
+	    char *extension = file_extension(args[i]->filename);
 	    if (extension
 		&& (strcmp(extension, "gz") == 0
 		    || strcmp(extension, "z") == 0)) {
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 		if ((pid = fork()) == 0) {
 		    // child
 		    close(pipes[0]);
-		    FILE *input_file = open_file(args[i]->name);
+		    FILE *input_file = open_file(args[i]->filename);
 		    int file_fd = fileno(input_file);
 		    dup2(file_fd, 0);
 		    dup2(pipes[1], 1);
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 		    args[i]->pid = pid;
 		}
 	    } else {
-		args[i]->file = open_file(log->name);
+		args[i]->file = open_file(args[i]->filename);
 	    }
 
 	}
