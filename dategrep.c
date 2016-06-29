@@ -37,9 +37,12 @@ char const *program_name;
 
 typedef struct {
     FILE *file;
-    time_t from;
     char *filename;
     pid_t pid;
+    char *line;
+    time_t time;
+    bool done;
+    bool in_range;
 } logfile;
 
 struct options {
@@ -50,8 +53,13 @@ struct options {
     char *format;
 };
 
+struct next_log {
+    time_t until;
+    logfile *log;
+};
+
 off_t binary_search(FILE * file, struct options options);
-void process_file(logfile * log, struct options options);
+void process_file(logfile * log, struct options options, time_t until);
 time_t parse_date(char *string, char *format);
 char *file_extension(const char *filename);
 void print_usage(void);
@@ -59,6 +67,9 @@ void print_version(void);
 void parse_arguments(int argc, char *argv[], struct options *options);
 FILE *open_file(const char *filename);
 void *safe_malloc(size_t size);
+struct next_log find_next_log(logfile * logs[], int no_files, time_t);
+void free_log_buffer(logfile *);
+ssize_t buffered_getline(logfile *, struct options);
 
 char *file_extension(const char *filename)
 {
@@ -182,14 +193,15 @@ int main(int argc, char *argv[])
 	argv[0] = "-";
 	optind = 0;
     }
-    logfile *args[no_files];
+    // logfile *logs[no_files];
+    logfile *logs[10];
 
     for (int i = 0; i < no_files; i++) {
 
 	char *filename = argv[optind++];
 
-	args[i] = safe_malloc(sizeof(logfile));
-	logfile *log = args[i];
+	logs[i] = safe_malloc(sizeof(logfile));
+	logfile *log = logs[i];
 	memset(log, 0, sizeof(logfile));
 	log->filename = filename;
 
@@ -227,6 +239,7 @@ int main(int argc, char *argv[])
 	    if (offset == -1) {
 		i--;
 		no_files--;
+		free(log);
 	    } else {
 		fseeko(log->file, offset, SEEK_SET);
 	    }
@@ -234,53 +247,123 @@ int main(int argc, char *argv[])
     }
 
     for (int i = 0; i < no_files; i++) {
-	logfile *log = args[i];
-	FILE *file = log->file;
+	logfile *log = logs[i];
+	process_file(log, options, options.from);
 
-	process_file(log, options);
-	fclose(file);
-
-	if (log->pid) {
-	    int stat_loc = 0;
-	    waitpid(log->pid, &stat_loc, 0);
-	}
     }
+
+    struct next_log next;
+
+    while (next = find_next_log(logs, no_files, options.to), next.log) {
+	process_file(next.log, options, next.until);
+    }
+
     for (int i = 0; i < no_files; i++) {
-	free(args[i]);
+	free(logs[i]);
     }
 }
 
-void process_file(logfile * log, struct options options)
+struct next_log find_next_log(logfile * logs[], int no_files, time_t until)
 {
-    char *line = NULL;
-    ssize_t read;
+    time_t min = 0;
+    logfile *next = NULL;
+    int files_not_done = 0;
+
+    // find logfile with lowest buffered time
+    for (int i = 0; i < no_files; i++) {
+	logfile *log = logs[i];
+	if (!log->done) {
+	    files_not_done++;
+	    if (!next || log->time < min) {
+		next = log;
+		min = log->time;
+	    }
+	}
+    }
+
+    // find logfile with second lowest buffered time
+    for (int i = 0; i < no_files; i++) {
+	logfile *log = logs[i];
+	if (log->time > min && log->time < until) {
+	    until = log->time;
+	}
+    }
+    // we can process the first file until _until_ is reached
+    struct next_log next_log = {
+	.log = next,
+	.until = until,
+    };
+    return next_log;
+}
+
+ssize_t buffered_getline(logfile * log, struct options options)
+{
+    if (log->line) {
+	return 0;
+    }
     size_t max_size = 0;
+    char *line = NULL;
+    ssize_t read = getline(&line, &max_size, log->file);
+    if (read != -1) {
+	log->line = line;
+	log->time = parse_date(line, options.format);
+    }
+    return read;
+}
 
-    bool found_from = 0;
+void free_log_buffer(logfile * log)
+{
+    free(log->line);
+    log->line = NULL;
+    log->time = -1;
+}
 
-    while ((read = getline(&line, &max_size, log->file)) != -1) {
-	time_t date = parse_date(line, options.format);
+void process_file(logfile * log, struct options options, time_t until)
+{
+    ssize_t read;
+    while ((read = buffered_getline(log, options)) != -1) {
 
-	if (date == -1) {
+	// if the date can't be parsed there are three options
+	// 1. -s skip line and continue
+	// 2. -m print line if in range and then continue
+	// 3. exit
+	if (log->time == -1) {
 	    if (options.skip) {
+		free_log_buffer(log);
 		continue;
 	    }
-	    if (options.multiline && found_from) {
-		printf("%s", line);
+	    if (options.multiline && log->in_range) {
+		printf("%s", log->line);
+		free_log_buffer(log);
 		continue;
 	    }
 	    fflush(stdout);
-	    fprintf(stderr, "%s: Unparsable line: %s", program_name, line);
+	    fprintf(stderr, "%s: Unparsable line: %s", program_name,
+		    log->line);
 	    exit(EXIT_FAILURE);
-	}
-	if (date >= options.from && date < options.to) {
-	    found_from = 1;
-	    printf("%s", line);
-	} else if (date >= options.to) {
+	} else if (log->time >= options.from && log->time < options.to) {
+	    log->in_range = 1;
+
+	    if (until != -1 && log->time > until) {
+		return;
+	    }
+
+	    printf("%s", log->line);
+	    free_log_buffer(log);
+	} else if (log->time >= options.to) {
 	    break;
+	} else {
+	    free_log_buffer(log);
 	}
     }
-    free(line);
+    log->done = 1;
+    fclose(log->file);
+    if (log->pid) {
+	int stat_loc = 0;
+	waitpid(log->pid, &stat_loc, 0);
+	log->pid = -1;
+    }
+    free_log_buffer(log);
 }
 
 FILE *open_file(const char *filename)

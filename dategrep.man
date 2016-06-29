@@ -24,6 +24,10 @@ Files with a file name ending in
 or
 .I .z
 will be automatically piped through gzip.
+.PP
+When multiple file are given,
+.I dategrep
+will automatically sort the matching lines by time.
 .SH OPTIONS
 .TP
 .BI \-f " DATETIME"
