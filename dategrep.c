@@ -70,7 +70,8 @@ void *safe_malloc(size_t size);
 struct next_log find_next_log(logfile * logs[], int no_files, time_t);
 void free_log_buffer(logfile *);
 ssize_t buffered_getline(logfile *, struct options);
-void open_pipe(logfile *);
+void open_pipe(logfile * log, char *path, char *argv[]);
+bool match_extension(char *extension, char **suffix);
 
 char *file_extension(const char *filename)
 {
@@ -162,6 +163,19 @@ void parse_arguments(int argc, char *argv[], struct options *options)
     }
 }
 
+bool match_extension(char *extension, char **suffix)
+{
+    if (!extension) {
+	return false;
+    }
+    for (; *suffix != NULL; suffix++) {
+	if (strcmp(extension, *suffix) == 0) {
+	    return true;
+	}
+    }
+    return false;
+}
+
 int main(int argc, char *argv[])
 {
     program_name = argv[0];
@@ -194,8 +208,7 @@ int main(int argc, char *argv[])
 	argv[0] = "-";
 	optind = 0;
     }
-    // logfile *logs[no_files];
-    logfile *logs[10];
+    logfile *logs[no_files];
 
     for (int i = 0; i < no_files; i++) {
 
@@ -207,10 +220,16 @@ int main(int argc, char *argv[])
 	log->filename = filename;
 
 	char *extension = file_extension(log->filename);
-	if (extension
-	    && (strcmp(extension, "gz") == 0
-		|| strcmp(extension, "z") == 0)) {
-	    open_pipe(log);
+
+	char *gzip_endings[] = { "gz", "z", NULL };
+	char *bzip_endings[] = { "bz", "bz2", NULL };
+
+	if (match_extension(extension, gzip_endings)) {
+	    char *gzip_argv[] = { "gzip", "-c", "-d", (char *) NULL };
+	    open_pipe(log, "gzip", gzip_argv);
+	} else if (match_extension(extension, bzip_endings)) {
+	    char *bzcat_argv[] = { "bzcat", (char *) NULL };
+	    open_pipe(log, "bzcat", bzcat_argv);
 	} else if (strcmp(log->filename, "-") == 0) {
 	    log->file = stdin;
 	} else {
@@ -243,7 +262,7 @@ int main(int argc, char *argv[])
     }
 }
 
-void open_pipe(logfile * log)
+void open_pipe(logfile * log, char *path, char *argv[])
 {
     int pipes[2];
     pipe(pipes);
@@ -255,7 +274,7 @@ void open_pipe(logfile * log)
 	int file_fd = fileno(input_file);
 	dup2(file_fd, 0);
 	dup2(pipes[1], 1);
-	execlp("gzip", "gzip", "-c", "-d", (char *) NULL);
+	execvp(path, argv);
     } else if (pid == -1) {
 	// fork failed
 	fprintf(stderr, "%s: Cannot fork gzip: %s\n",
