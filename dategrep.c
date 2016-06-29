@@ -70,6 +70,7 @@ void *safe_malloc(size_t size);
 struct next_log find_next_log(logfile * logs[], int no_files, time_t);
 void free_log_buffer(logfile *);
 ssize_t buffered_getline(logfile *, struct options);
+void open_pipe(logfile *);
 
 char *file_extension(const char *filename)
 {
@@ -209,28 +210,7 @@ int main(int argc, char *argv[])
 	if (extension
 	    && (strcmp(extension, "gz") == 0
 		|| strcmp(extension, "z") == 0)) {
-	    int pipes[2];
-	    pipe(pipes);
-	    pid_t pid;
-	    if ((pid = fork()) == 0) {
-		// child
-		close(pipes[0]);
-		FILE *input_file = open_file(log->filename);
-		int file_fd = fileno(input_file);
-		dup2(file_fd, 0);
-		dup2(pipes[1], 1);
-		execlp("gzip", "gzip", "-c", "-d", (char *) NULL);
-	    } else if (pid == -1) {
-		// fork failed
-		fprintf(stderr, "%s: Cannot fork gzip: %s\n",
-			program_name, strerror(errno));
-		exit(EXIT_FAILURE);
-	    } else {
-		// parent
-		close(pipes[1]);
-		log->file = fdopen(pipes[0], "r");
-		log->pid = pid;
-	    }
+	    open_pipe(log);
 	} else if (strcmp(log->filename, "-") == 0) {
 	    log->file = stdin;
 	} else {
@@ -260,6 +240,32 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < no_files; i++) {
 	free(logs[i]);
+    }
+}
+
+void open_pipe(logfile * log)
+{
+    int pipes[2];
+    pipe(pipes);
+    pid_t pid;
+    if ((pid = fork()) == 0) {
+	// child
+	close(pipes[0]);
+	FILE *input_file = open_file(log->filename);
+	int file_fd = fileno(input_file);
+	dup2(file_fd, 0);
+	dup2(pipes[1], 1);
+	execlp("gzip", "gzip", "-c", "-d", (char *) NULL);
+    } else if (pid == -1) {
+	// fork failed
+	fprintf(stderr, "%s: Cannot fork gzip: %s\n",
+		program_name, strerror(errno));
+	exit(EXIT_FAILURE);
+    } else {
+	// parent
+	close(pipes[1]);
+	log->file = fdopen(pipes[0], "r");
+	log->pid = pid;
     }
 }
 
