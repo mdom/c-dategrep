@@ -22,7 +22,7 @@ todo(){
 }
 
 depends_on(){
-	if ! command -v "$1";then
+	if ! command -v "$1" >/dev/null 2>&1;then
 		skip_all "$1 not installed."
 	fi
 }
