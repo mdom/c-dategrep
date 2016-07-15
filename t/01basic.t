@@ -6,7 +6,7 @@ name "Empty input results in empty output"
 cat > input <<EOF
 EOF
 
-tap dategrep -f 2010-05-01T00:00:00 -t 2010-05-01T00:00:01 input
+tap dategrep -f "2010-05-01T00:00:00" -t "2010-05-01T00:00:01" input
 
 #################
 name "Match all input lines"
@@ -28,22 +28,10 @@ tap dategrep -f "2010-05-01T00:00:00" -t "2010-05-01T00:00:03" -F "%FT%T" input
 #################
 name "Match no lines"
 
-cat > input <<EOF
-2010-05-01T00:00:00 line 1
-2010-05-01T00:00:01 line 2
-2010-05-01T00:00:02 line 3
-EOF
-
 tap dategrep -f "2010-05-01T00:00:03" -F "%FT%T" input
 
 #################
 name "Output single line in middle of input"
-
-cat > input <<EOF
-2010-05-01T00:00:00 line 1
-2010-05-01T00:00:01 line 2
-2010-05-01T00:00:02 line 3
-EOF
 
 stdout_is <<EOF
 2010-05-01T00:00:01 line 2
@@ -71,13 +59,6 @@ tap dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T" input
 
 #################
 name "Skip dateless lines"
-
-cat > input <<EOF
-2010-05-01T00:00:00 line 1
-foo
-2010-05-01T00:00:01 line 2
-2010-05-01T00:00:02 line 3
-EOF
 
 stdout_is <<EOF
 2010-05-01T00:00:01 line 2
@@ -135,4 +116,5 @@ unset -v DATEGREP_FORMAT
 
 
 #################
+
 done_testing

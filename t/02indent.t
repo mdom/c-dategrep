@@ -4,8 +4,8 @@ depends_on indent
 
 name "Check indentation"
 
-cat dategrep.c | stdout_is
+stdout_is < "$current_dir/dategrep.c"
 
-tap indent -kr -st dategrep.c
+tap indent -kr -st "$current_dir/dategrep.c"
 
 done_testing

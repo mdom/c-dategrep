@@ -3,6 +3,8 @@
 depends_on gzip
 depends_on bzcat
 
+set -- dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T"
+
 #################
 name "Uncompress gzip file on the fly"
 
@@ -16,7 +18,7 @@ stdout_is <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-tap dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T" input.gz
+tap "$@" input.gz
 
 #################
 
@@ -32,7 +34,7 @@ stdout_is <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-tap dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T" input.bz2
+tap "$@" input.bz2
 
 #################
 name "Uncompressed and compressed files"
@@ -54,7 +56,7 @@ stdout_is <<EOF
 2010-05-01T00:00:01 line 2
 EOF
 
-tap dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:02" -F "%FT%T" input.gz input
+tap "$@" input.gz input
 
 #################
 done_testing

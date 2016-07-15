@@ -24,7 +24,5 @@ EOF
 
 tap dategrep -f "2010-05-01T00:00:01" -t "2010-05-01T00:00:05" -F "%FT%T" input2 input1
 
-rm input1 input2
-
 #################
 done_testing

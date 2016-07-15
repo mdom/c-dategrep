@@ -1,16 +1,17 @@
 #!/bin/sh
 
-PATH=.:$PATH
+PATH=$(pwd):$PATH
 
 plan=0
 rc_plan=0
+tapsig_state="running"
 
 ok(){
-	printf "ok $plan${name+ $name}\n";
+	printf "ok %i%s%s\n" "$plan" "${name:+ $name}" "${todo:+ # TODO $todo}"
 }
 
 not_ok(){
-	printf "not ok $plan${name+ $name}\n"
+	printf "not ok %i%s%s\n" "$plan" "${name:+ $name}" "${todo:+ # TODO $todo}"
 }
 
 skip(){
@@ -29,18 +30,27 @@ depends_on(){
 
 skip_all(){
 	clean_up
-	printf "1..0 # SKIP${1+ $1}\n"
+	printf "1..0 # SKIP%s\n" "${1+ $1}"
 	exit 0
 }
 
+# shellcheck disable=SC2015
 check_expections(){
 	if [ "$plan" != 0 ];then
-		test_output stderr_plan stderr &&
-		test_output stdout_plan stdout &&
-		[ ${rc-0} -eq $rc_plan ] &&
+		test_files &&
+		[ "${rc-0}" -eq "$rc_plan" ] &&
 		ok ||
 		not_ok
 	fi
+}
+
+test_files(){
+	for i in *_plan;do
+		if ! test_output "$i" "${i%_plan}";then
+			return 1
+		fi
+	done
+	return 0
 }
 
 name(){
@@ -51,72 +61,85 @@ test_output(){
 	if cmp -s "$1" "$2";then
 		return 0
 	else
-		diff -u "$1" "$2" | diag
+		# shellcheck disable=SC2119
+		diff "$1" "$2" | diag
 		return 1
 	fi
 }
 
 done_testing(){
-	printf "1..$plan\n"
-	exit 0
-}
-
-maybe_touch(){
-	for i in "$@";do
-		[ -e "$i" ] || touch "$i"
-	done
+	tapsig_state="done"
 }
 
 tap(){
-	maybe_touch stdout_plan stderr_plan
+	touch stdout_plan stderr_plan
 	plan=$(( plan + 1 ))
 	if [ -n "$skip" ];then
-		printf "ok $plan # SKIP $skip\n"
-		skip=""
-	elif [ -n "$todo" ];then
-		printf "not ok $plan # TODO $todo\n"
-		todo=""
+		printf "ok %i # SKIP $skip\n" "$plan"
 	else
-		if [ -e stdin ];then
-			"$@" < stdin > stdout 2> stderr
-		else	
-			"$@" > stdout 2> stderr
-		fi
+		"$@" > stdout 2> stderr
 		rc=$?
 		check_expections
 	fi
 	clean_up
 }
 
+# shellcheck disable=SC2120
 diag(){
 	if [ -n "$1" ];then
-		printf "# $1\n"
+		printf "# %s\n" "$1"
 	else
 		sed 's/^/# /'
 	fi
 }
 
 bail_out(){
-	printf "Bail out!${1+ $1}\n"
+	printf "Bail out!%s\n" "${1+ $1}"
 	exit 0
 }
 
 stdout_is(){ cat > stdout_plan; }
 stderr_is(){ cat > stderr_plan; }
-stdin(){ cat > stdin; }
+
+file_is() {
+	cat > "$1_plan"
+}
 
 rc_is() { rc_plan=$1; }
 
 clean_up(){
-	rm -f stdout stderr stdin stdout_plan stderr_plan;
+	for i in *_plan;do
+		rm -f "$i" "${i%_plan}"
+	done
 	rc_plan=0
+	todo=""
+	skip=""
+	name=""
 }
 
 if [ -e "$1" ];then
-	. "$1"
-	## this code should not be reached
-	if [ $plan -gt 0 ];then
+	current_dir=$(pwd)
+	work_dir="$HOME/.tapsig.$$"
+	if ! mkdir "$work_dir";then
+		printf "Can't create working directory %s.\n" "$work_dir" >&2
+		exit 1
+	fi
+	if ! cd "$work_dir";then
+		printf "Can't cd into working directory %s.\n" "$work_dir" >&2
+		exit 1
+	fi
+
+	. "$current_dir/$1"
+
+	rm -R "$work_dir"
+
+	if [ "$tapsig_state" = "done" ];then
+		printf "1..%s\n" "$plan"
+		exit 0
+	elif [ $plan -gt 0 ];then
 		printf "# Tests were run but done_testing() was not seen.\n" >&2
+		exit 1
+	else 
 		exit 1
 	fi
 fi
