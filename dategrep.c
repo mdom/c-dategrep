@@ -60,7 +60,7 @@ struct next_log {
 off_t binary_search(FILE * file, struct options options);
 void process_file(logfile * log, struct options options, time_t until);
 time_t parse_date(char *string, char *format);
-char *file_extension(const char *filename);
+char *file_extension(char *filename);
 void print_usage(void);
 void print_version(void);
 void parse_arguments(int argc, char *argv[], struct options *options);
@@ -72,9 +72,9 @@ ssize_t buffered_getline(logfile *, struct options);
 void open_pipe(logfile * log, char *path, char *argv[]);
 bool match_extension(char *extension, char **suffix);
 
-char *file_extension(const char *filename)
+char *file_extension(char *filename)
 {
-    const char *dot = strrchr(filename, '.');
+    char *dot = (char *) strrchr(filename, '.');
     if (!dot || dot == filename)
 	return "";
     return dot + 1;
