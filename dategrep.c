@@ -29,7 +29,6 @@
 #include <errno.h>
 #include <stdbool.h>
 #include "approxidate.h"
-#include "config.h"
 
 extern char *optarg;
 extern int optind, opterr, optopt;
