@@ -2,10 +2,6 @@
 
 dategrep - print lines matching a date range
 
-# DEPRECATED
-
-This project was just a experiment to see how easy it would be to port dategrep to c. And i wanted to work on my c skills. But i probably won't work on it a lot in the future. With that said, it works. Just drop me a note if you want to take over!
-
 # SYNOPSIS
 
     dategrep -f "12:00" -t "12:15" -F "%b %d %H:%M:%S" syslog
